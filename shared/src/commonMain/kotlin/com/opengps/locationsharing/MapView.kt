@@ -70,6 +70,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
@@ -157,6 +158,105 @@ fun GreenCircle(size: Dp, char: Char? = null, grayscale: Boolean = false) {
 
 val ColorFilter.Companion.GrayScale: ColorFilter
     get() = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+
+// 彩色图钉的颜色方案 (8种易于区分的颜色)
+val pinColors = listOf(
+    Color(0xFFF44336), // 红色
+    Color(0xFF2196F3), // 蓝色
+    Color(0xFF4CAF50), // 绿色
+    Color(0xFFFFEB3B), // 黄色
+    Color(0xFF9C27B0), // 紫色
+    Color(0xFFFF9800), // 橙色
+    Color(0xFF00BCD4), // 青色
+    Color(0xFFE91E63)  // 粉色
+)
+
+// 根据用户ID分配颜色
+fun getUserPinColor(userId: ULong): Color {
+    val index = (userId % 8u).toInt()
+    return pinColors[index]
+}
+
+// 彩色图钉组件
+@Composable
+fun ColoredPin(color: Color, size: Dp, grayscale: Boolean = false) {
+    val finalColor = if (grayscale) Color.Gray else color
+
+    Canvas(Modifier.size(size)) {
+        val width = size.toPx()
+        val height = size.toPx()
+
+        // 绘制图钉的圆形顶部
+        val circleRadius = width * 0.35f
+        val circleCenter = Offset(width / 2, height * 0.3f)
+
+        // 绘制阴影效果
+        drawCircle(
+            color = Color.Black.copy(alpha = 0.2f),
+            radius = circleRadius + 2f,
+            center = circleCenter.copy(x = circleCenter.x + 2f, y = circleCenter.y + 2f)
+        )
+
+        // 绘制图钉主体圆形
+        drawCircle(
+            color = finalColor,
+            radius = circleRadius,
+            center = circleCenter
+        )
+
+        // 绘制图钉的边框
+        drawCircle(
+            color = Color.White,
+            radius = circleRadius,
+            center = circleCenter,
+            style = Stroke(width = 3f)
+        )
+
+        // 绘制图钉的尖端（三角形）
+        val triangleTop = Offset(width / 2, height * 0.6f)
+        val triangleBottom = Offset(width / 2, height * 0.95f)
+        val triangleLeft = Offset(width * 0.4f, height * 0.6f)
+        val triangleRight = Offset(width * 0.6f, height * 0.6f)
+
+        val trianglePath = Path().apply {
+            moveTo(triangleLeft.x, triangleLeft.y)
+            lineTo(triangleBottom.x, triangleBottom.y)
+            lineTo(triangleRight.x, triangleRight.y)
+            close()
+        }
+
+        // 绘制三角形阴影
+        drawPath(
+            path = Path().apply {
+                moveTo(triangleLeft.x + 2f, triangleLeft.y + 2f)
+                lineTo(triangleBottom.x + 2f, triangleBottom.y + 2f)
+                lineTo(triangleRight.x + 2f, triangleRight.y + 2f)
+                close()
+            },
+            color = Color.Black.copy(alpha = 0.2f)
+        )
+
+        // 绘制三角形主体
+        drawPath(
+            path = trianglePath,
+            color = finalColor
+        )
+
+        // 绘制三角形边框
+        drawPath(
+            path = trianglePath,
+            color = Color.White,
+            style = Stroke(width = 2f)
+        )
+
+        // 绘制图钉中心的白色圆点
+        drawCircle(
+            color = Color.White,
+            radius = circleRadius * 0.3f,
+            center = circleCenter
+        )
+    }
+}
 
 @Composable
 fun UserPicture(userPhoto: String?, firstChar: Char, size: Dp, grayscale: Boolean) {
@@ -548,19 +648,21 @@ fun MapView() {
                     }
                     for (user in users) {
                         if (user.currentPosition() == null) continue
+                        // 调整偏移量，使图钉尖端对准实际位置
                         val center =
-                            camera.projection!!.screenLocationFromPosition(user.currentPosition()!!.toPosition()) - DpOffset(35.dp, 35.dp)
+                            camera.projection!!.screenLocationFromPosition(user.currentPosition()!!.toPosition()) - DpOffset(25.dp, 50.dp)
 
                         Box(Modifier.offset(center.x, center.y)) {
-                            UserPicture(user, 70.dp)
+                            ColoredPin(getUserPinColor(user.id), 50.dp)
                         }
                     }
                     if(selectedObjectPosition != null && obj is User) {
+                        // 调整偏移量，使图钉尖端对准实际位置
                         val center =
-                            camera.projection!!.screenLocationFromPosition(selectedObjectPosition!!) - DpOffset(35.dp, 35.dp)
+                            camera.projection!!.screenLocationFromPosition(selectedObjectPosition!!) - DpOffset(25.dp, 50.dp)
 
                         Box(Modifier.offset(center.x, center.y)) {
-                            UserPicture(obj, 70.dp, true)
+                            ColoredPin(getUserPinColor(obj.id), 50.dp, true)
                         }
                     }
                 }
