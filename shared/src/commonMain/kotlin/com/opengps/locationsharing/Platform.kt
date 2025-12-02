@@ -10,6 +10,12 @@ import androidx.sqlite.execSQL
 import okio.Path.Companion.toPath
 import org.maplibre.compose.map.MapOptions
 
+data class AppIcon(
+    val name: String,
+    val displayName: String,
+    val componentName: String
+)
+
 abstract class Platform {
     abstract val mapOptions: MapOptions
     abstract val dataStore: DataStore<Preferences>
@@ -28,6 +34,11 @@ abstract class Platform {
     abstract val batteryLevel: Float
 
     abstract val name: String
+
+    // 图标切换相关方法
+    abstract fun getCurrentAppIcon(): String
+    abstract fun setAppIcon(iconName: String)
+    abstract fun getAvailableIcons(): List<AppIcon>
 }
 
 val MIGRATION_1_2 = object : Migration(1, 2) {

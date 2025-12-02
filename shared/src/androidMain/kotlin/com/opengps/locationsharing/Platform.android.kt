@@ -130,6 +130,82 @@ class AndroidPlatform(private val context: Context): Platform() {
         }
 
     override val name: String = "Android"
+
+    // 图标切换实现
+    override fun getCurrentAppIcon(): String {
+        val packageManager = context.packageManager
+        val boyComponent = android.content.ComponentName(
+            context.packageName,
+            "com.opengps.locationsharing.android.MainActivityBoy"
+        )
+        val girlComponent = android.content.ComponentName(
+            context.packageName,
+            "com.opengps.locationsharing.android.MainActivityGirl"
+        )
+
+        val boyState = packageManager.getComponentEnabledSetting(boyComponent)
+        val girlState = packageManager.getComponentEnabledSetting(girlComponent)
+
+        return when {
+            boyState == android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED -> "boy"
+            girlState == android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED -> "girl"
+            else -> "boy" // 默认
+        }
+    }
+
+    override fun setAppIcon(iconName: String) {
+        val packageManager = context.packageManager
+        val boyComponent = android.content.ComponentName(
+            context.packageName,
+            "com.opengps.locationsharing.android.MainActivityBoy"
+        )
+        val girlComponent = android.content.ComponentName(
+            context.packageName,
+            "com.opengps.locationsharing.android.MainActivityGirl"
+        )
+
+        when (iconName) {
+            "boy" -> {
+                packageManager.setComponentEnabledSetting(
+                    boyComponent,
+                    android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    android.content.pm.PackageManager.DONT_KILL_APP
+                )
+                packageManager.setComponentEnabledSetting(
+                    girlComponent,
+                    android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    android.content.pm.PackageManager.DONT_KILL_APP
+                )
+            }
+            "girl" -> {
+                packageManager.setComponentEnabledSetting(
+                    girlComponent,
+                    android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    android.content.pm.PackageManager.DONT_KILL_APP
+                )
+                packageManager.setComponentEnabledSetting(
+                    boyComponent,
+                    android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    android.content.pm.PackageManager.DONT_KILL_APP
+                )
+            }
+        }
+    }
+
+    override fun getAvailableIcons(): List<AppIcon> {
+        return listOf(
+            AppIcon(
+                name = "boy",
+                displayName = "男孩",
+                componentName = "com.opengps.locationsharing.android.MainActivityBoy"
+            ),
+            AppIcon(
+                name = "girl",
+                displayName = "女孩",
+                componentName = "com.opengps.locationsharing.android.MainActivityGirl"
+            )
+        )
+    }
 }
 
 fun createDataStore(context: Context): DataStore<Preferences> =

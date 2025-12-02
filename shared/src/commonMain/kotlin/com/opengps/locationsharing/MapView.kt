@@ -421,6 +421,10 @@ val editingWaypointRadius = mutableStateOf("")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalTime::class)
 @Composable
 fun MapView() {
+    // 图标切换相关状态
+    var showIconDialog by remember { mutableStateOf(false) }
+    var currentIcon by remember { mutableStateOf(platform.getCurrentAppIcon()) }
+
     BackHandler(enabled = selectedObject != null) {
         selectedObject = null
     }
@@ -472,6 +476,59 @@ fun MapView() {
         val newZoom = max(camera.position.zoom, 14.0)
         obj?.currentPosition()?.let {
             camera.animateTo(camera.position.copy(target = it.toPosition(), zoom = newZoom))
+        }
+    }
+
+    // 图标选择对话框
+    if (showIconDialog) {
+        BasicAlertDialog(
+            onDismissRequest = { showIconDialog = false }
+        ) {
+            Card(Modifier.padding(16.dp)) {
+                Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text(
+                        "选择应用图标",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    val availableIcons = platform.getAvailableIcons()
+
+                    availableIcons.forEach { icon ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    platform.setAppIcon(icon.name)
+                                    currentIcon = icon.name
+                                    showIconDialog = false
+                                }
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                icon.displayName,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            if (currentIcon == icon.name) {
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = { showIconDialog = false },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("取消")
+                    }
+                }
+            }
         }
     }
 
@@ -580,6 +637,12 @@ fun MapView() {
             }) {
                 Icon(Icons.Default.Upload, null)
             }
+            // 图标切换按钮
+            IconButton({
+                showIconDialog = true
+            }) {
+                Icon(Icons.Default.Person, null)
+            }
         }
         val navIcon = @Composable {
             if (selectedObject != null)
@@ -587,7 +650,23 @@ fun MapView() {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                 }
         }
-        TopAppBar(TextP(selectedObject?.name ?: "找猪"), Modifier, navIcon, actions)
+        TopAppBar(
+            title = {
+                Text(
+                    text = selectedObject?.name ?: "找猪",
+                    modifier = Modifier.clickable {
+                        // 快速切换图标（点击标题）
+                        if (selectedObject == null) {
+                            val newIcon = if (currentIcon == "boy") "girl" else "boy"
+                            platform.setAppIcon(newIcon)
+                            currentIcon = newIcon
+                        }
+                    }
+                )
+            },
+            navigationIcon = navIcon,
+            actions = actions
+        )
     }, bottomBar = {
         val height by remember {derivedStateOf { when(selectedObject) {
             is User -> 300.dp
