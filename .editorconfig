@@ -1,0 +1,50 @@
+# EditorConfig 帮助在不同编辑器和 IDE 之间保持一致的编码风格
+# https://editorconfig.org
+
+root = true
+
+# 所有文件的默认设置
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Kotlin 文件
+[*.{kt,kts}]
+indent_size = 4
+max_line_length = 120
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+
+# Gradle 文件
+[*.gradle.kts]
+indent_size = 4
+
+# XML 文件（Android 资源文件）
+[*.xml]
+indent_size = 4
+max_line_length = 120
+
+# Markdown 文件
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = off
+
+# TOML 文件
+[*.toml]
+indent_size = 2
+
+# JSON 文件
+[*.json]
+indent_size = 2
+
+# YAML 文件
+[*.{yml,yaml}]
+indent_size = 2
+
+# Properties 文件
+[*.properties]
+indent_size = 2

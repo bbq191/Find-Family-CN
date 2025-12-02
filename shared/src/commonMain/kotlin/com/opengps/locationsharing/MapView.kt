@@ -487,7 +487,7 @@ fun MapView() {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                 }
         }
-        TopAppBar(TextP(selectedObject?.name ?: "Find Family"), Modifier, navIcon, actions)
+        TopAppBar(TextP(selectedObject?.name ?: "找猪"), Modifier, navIcon, actions)
     }, bottomBar = {
         val height by remember {derivedStateOf { when(selectedObject) {
             is User -> 300.dp

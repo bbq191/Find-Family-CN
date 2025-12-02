@@ -58,6 +58,11 @@ private suspend fun locationBackend(locationValue: LocationValue) {
 
     UsersCached.getAll().filter{ it.send }.forEach { Networking.publishLocation(locationValue, it) }
 
+    // 更新自己的位置信息，以便在地图上显示自己的头像
+    Networking.userid?.let { myId ->
+        UsersCached.updateByID(myId) { it.copy(lastLocationValue = locationValue) }
+    }
+
     val receivedLocations = Networking.receiveLocations() ?: listOf()
 
     val newLocations = receivedLocations.groupBy { it.userid }.filterKeys { id -> UsersCached.getByID(id) != null }.mapValues { it.value.sortedBy { it.timestamp } }
