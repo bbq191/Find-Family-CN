@@ -206,6 +206,21 @@ class AndroidPlatform(private val context: Context): Platform() {
             )
         )
     }
+
+    override fun getGifResourceId(resourceName: String): Any? {
+        return try {
+            // 获取资源 ID
+            val resId = context.resources.getIdentifier(resourceName, "raw", context.packageName)
+            if (resId != 0) {
+                // 返回资源 URI 字符串，Coil 可以直接加载
+                "android.resource://${context.packageName}/raw/$resourceName"
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
 
 fun createDataStore(context: Context): DataStore<Preferences> =

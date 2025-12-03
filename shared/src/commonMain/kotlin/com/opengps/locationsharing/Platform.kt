@@ -39,6 +39,9 @@ abstract class Platform {
     abstract fun getCurrentAppIcon(): String
     abstract fun setAppIcon(iconName: String)
     abstract fun getAvailableIcons(): List<AppIcon>
+
+    // GIF 资源加载
+    abstract fun getGifResourceId(resourceName: String): Any?
 }
 
 val MIGRATION_1_2 = object : Migration(1, 2) {

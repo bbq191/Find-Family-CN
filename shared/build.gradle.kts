@@ -55,6 +55,7 @@ kotlin {
             // Image loading
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor3)
+            implementation(libs.coil.gif)
 
             // Map
             implementation(libs.maplibre.compose)
@@ -116,6 +117,7 @@ android {
     sourceSets {
         named("main") {
             res.srcDirs("src/androidMain/res")
+            assets.srcDirs("src/androidMain/assets")
         }
     }
 }

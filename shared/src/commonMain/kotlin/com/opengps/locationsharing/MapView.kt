@@ -1,6 +1,12 @@
 package com.opengps.locationsharing
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -258,6 +264,22 @@ fun ColoredPin(color: Color, size: Dp, grayscale: Boolean = false) {
     }
 }
 
+// GIF 猪标记组件
+@Composable
+fun PigMarker(size: Dp, isMoving: Boolean = true, grayscale: Boolean = false) {
+    val gifName = if (isMoving) "pig_run.gif" else "pig_sit.gif"
+    // 使用 assets 路径加载 GIF
+    val assetPath = "file:///android_asset/$gifName"
+
+    AsyncImage(
+        model = assetPath,
+        contentDescription = null,
+        modifier = Modifier.size(size),
+        contentScale = ContentScale.Fit,
+        colorFilter = if (grayscale) ColorFilter.GrayScale else null
+    )
+}
+
 @Composable
 fun UserPicture(userPhoto: String?, firstChar: Char, size: Dp, grayscale: Boolean) {
     val modifier = Modifier.clip(CircleShape).size(size).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
@@ -454,19 +476,42 @@ fun MapView() {
 
     LaunchedEffect(Unit) {
         SuspendScope {
-            UsersCached.init()
-            objects = (waypointDao.getAll() + UsersCached.getAll() + bluetoothDao.getAll()).associateBy { it.id }
-            while(Networking.userid == null) { delay(500) }
-            if(users.isEmpty()) {
-                val newUser = User(Networking.userid!!, "Me", null, "Unnamed Location", true, RequestStatus.MUTUAL_CONNECTION, null, null)
-                UsersCached.upsert(newUser)
-                objects = objects + (newUser.id to newUser)
-            }
-
-            while(true) {
+            try {
+                UsersCached.init()
                 objects = (waypointDao.getAll() + UsersCached.getAll() + bluetoothDao.getAll()).associateBy { it.id }
-                selectedObject = objects[selectedObject?.id]
-                delay(1000)
+
+                // 等待用户ID初始化，最多等待30秒
+                var waitTime = 0
+                while(Networking.userid == null && waitTime < 60) {
+                    delay(500)
+                    waitTime++
+                }
+
+                if(Networking.userid == null) {
+                    println("警告: 用户ID初始化超时")
+                } else if(users.isEmpty()) {
+                    val newUser = User(
+                        Networking.userid!!,
+                        "Me",
+                        null,
+                        "Unnamed Location",
+                        true,
+                        RequestStatus.MUTUAL_CONNECTION,
+                        null,
+                        null
+                    )
+                    UsersCached.upsert(newUser)
+                    objects = objects + (newUser.id to newUser)
+                }
+
+                while(true) {
+                    objects = (waypointDao.getAll() + UsersCached.getAll() + bluetoothDao.getAll()).associateBy { it.id }
+                    selectedObject = objects[selectedObject?.id]
+                    delay(1000)
+                }
+            } catch (e: Exception) {
+                println("MapView初始化错误: ${e.message}")
+                e.printStackTrace()
             }
         }
     }
@@ -727,21 +772,23 @@ fun MapView() {
                     }
                     for (user in users) {
                         if (user.currentPosition() == null) continue
-                        // 调整偏移量，使图钉尖端对准实际位置
+                        // 调整偏移量，使猪图标居中对准实际位置
                         val center =
-                            camera.projection!!.screenLocationFromPosition(user.currentPosition()!!.toPosition()) - DpOffset(25.dp, 50.dp)
+                            camera.projection!!.screenLocationFromPosition(user.currentPosition()!!.toPosition()) - DpOffset(30.dp, 30.dp)
 
                         Box(Modifier.offset(center.x, center.y)) {
-                            ColoredPin(getUserPinColor(user.id), 50.dp)
+                            // 根据速度判断猪是否在移动
+                            val isMoving = user.lastLocationValue?.speed?.let { it > 0.5 } ?: false
+                            PigMarker(60.dp, isMoving)
                         }
                     }
                     if(selectedObjectPosition != null && obj is User) {
-                        // 调整偏移量，使图钉尖端对准实际位置
+                        // 调整偏移量，使猪图标居中对准实际位置
                         val center =
-                            camera.projection!!.screenLocationFromPosition(selectedObjectPosition!!) - DpOffset(25.dp, 50.dp)
+                            camera.projection!!.screenLocationFromPosition(selectedObjectPosition!!) - DpOffset(30.dp, 30.dp)
 
                         Box(Modifier.offset(center.x, center.y)) {
-                            ColoredPin(getUserPinColor(obj.id), 50.dp, true)
+                            PigMarker(60.dp, false, true)
                         }
                     }
                 }

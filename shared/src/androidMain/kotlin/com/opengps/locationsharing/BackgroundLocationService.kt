@@ -32,22 +32,32 @@ class BackgroundLocationService : Service() {
     @SuppressLint("MissingPermission")
     private fun startUpdatingNotification() {
         val locationManager = getSystemService(LocationManager::class.java)
-        locationManager.requestLocationUpdates(
-            LocationManager.FUSED_PROVIDER,
-            SHARE_INTERVAL,
-            0F
-        ) {}
+
+        // 使用 GPS_PROVIDER 代替不存在的 FUSED_PROVIDER
+        try {
+            locationManager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                SHARE_INTERVAL,
+                0F
+            ) {}
+        } catch (e: Exception) {
+            android.util.Log.e("BackgroundLocationService", "无法请求位置更新", e)
+            updateNotification("位置服务启动失败")
+        }
 
         serviceJob = SuspendScope {
-            while(platformInternal == null)
-                platformInternal = AndroidPlatform(this@BackgroundLocationService)
-            //TODO: eventually re-enable tor
-            //runtime.startDaemonAsync()
-            Networking.init()
-            updateNotification("started")
-            var availability = true
-            while(true) {
-                val location = locationManager.getLastKnownLocation(LocationManager.FUSED_PROVIDER)
+            try {
+                while(platformInternal == null)
+                    platformInternal = AndroidPlatform(this@BackgroundLocationService)
+                //TODO: eventually re-enable tor
+                //runtime.startDaemonAsync()
+                Networking.init()
+                updateNotification("started")
+                var availability = true
+                while(true) {
+                    // 优先使用 GPS，如果不可用则使用 NETWORK
+                    val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                        ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
                 if(location != null) {
                     backgroundTask(
                         Coord(
@@ -68,6 +78,10 @@ class BackgroundLocationService : Service() {
                     }
                 }
                 delay(SHARE_INTERVAL)
+            }
+            } catch (e: Exception) {
+                android.util.Log.e("BackgroundLocationService", "后台服务运行错误", e)
+                updateNotification("服务错误: ${e.message}")
             }
         }
     }
